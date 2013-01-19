@@ -21,8 +21,9 @@ class dummy_dropper(DatagramProtocol):
         self.send("REQ CON D")
 
     def send(self, data):
-        print "<-%s" % (data.rstrip(), )
-        self.transport.write(data)
+        if self.transport:
+            print "<-%s" % (data.rstrip(), )
+            self.transport.write(data)
 
     def datagramReceived(self, data, addr):
         print "->%s" % (data.strip(),)

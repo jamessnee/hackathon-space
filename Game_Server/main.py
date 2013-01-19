@@ -15,7 +15,7 @@ class UDPDemux(DatagramProtocol):
         self.nh = nh
 
     def datagramReceived(self, data, addr):
-        print "UDP %s:%d -> %s" % (addr[0], addr[1], data.rstrip())
+        # print "UDP %s:%d -> %s" % (addr[0], addr[1], data.rstrip())
         self.nh.received(self.transport, data, addr)
 
 class NetworkHandler(object):

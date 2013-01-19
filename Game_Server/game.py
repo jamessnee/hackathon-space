@@ -22,7 +22,7 @@ class Player(object):
 
     # Send data
     def send(self, data):
-        print "%s:%d <- %s" % (self.addr[0], self.addr[1], data.rstrip())
+        # print "%s:%d <- %s" % (self.addr[0], self.addr[1], data.rstrip())
         self.trans.write(data, self.addr)
 
     def received(self, data):
@@ -52,7 +52,7 @@ class Player(object):
         self.send("REQ REJECT")
 
     def error(self, e = ""):
-        self.send("ERROR %s")
+        self.send("ERROR %s" % (e,))
         self.nh.remove(self)
         self.die()
 
@@ -81,6 +81,8 @@ class Kplayer(Player):
     def __init__(self, nh, trans, addr, gl):
         Player.__init__(self, nh, trans, addr)
         self.gl = gl
+
+        self.pos = 0
 
     def recv_data(self, data):
 
@@ -112,35 +114,45 @@ class Logic(object):
 
         self.state = Logic.STATE_WAITING
 
+        self.loop = LoopingCall(self.game_loop)
+
     def broadcast(self, data):
         if self.kplayer:
             self.kplayer.send(data)
         for d in self.droppers:
             d.send(data)
 
+    def game_loop(self):
+        self.broadcast("STATE K:%d" % (self.kplayer.pos,))
+
 #####
 
-    def start(self):
+    def _start(self):
         self.state = Logic.STATE_PLAYING
         self.broadcast("START")
         print "Starting Game"
 
-    def stop(self):
+        self.loop.start(0.05)
+
+    def _stop(self):
         self.state = Logic.STATE_WAITING
         self.broadcast("STOP")
         print "Stopping Game"
+
+        self.loop.stop()
+
 
     def possibly_start(self):
         if self.state == Logic.STATE_PLAYING:
             return
         if ( self.kplayer is not None and len(self.droppers) > 0 ):
-            self.start()
+            self._start()
 
     def possibly_stop(self):
         if self.state == Logic.STATE_WAITING:
             return
         if ( self.kplayer is None or len(self.droppers) == 0 ):
-            self.stop()
+            self._stop()
 
 #####
     def add_kplayer(self, kplayer):
@@ -148,16 +160,22 @@ class Logic(object):
             self.kplayer = kplayer
             self.kplayer.accept()
             self.possibly_start()
+            print "Got Kplayer"
         else:
             kplayer.reject()
 
     def rm_kplayer(self):
         self.kplayer = None
-        print "Kplayer died :("
-        self.stop()
+        print "Lost Kplayer"
+        self.possibly_stop()
 
     def kplayer_move(self, pos):
-        print "Kplayer is now at %d" % (pos, )
+
+        if not ( 0 <= pos <= 640 ):
+            print "Kplayer invalid position %d" % (pos,)
+            self.possibly_stop()
+        else:
+            self.kplayer.pos = pos
 
 #####
 
@@ -165,12 +183,12 @@ class Logic(object):
         self.droppers.append(dropper)
         dropper.accept()
         self.possibly_start()
-        print "New dropper"
+        print "New dropper.  Got %d" % (len(self.droppers), )
 
     def rm_dropper(self, dropper):
         self.droppers.remove(dropper)
         self.possibly_stop()
-        print "Lost dropper"
+        print "Lost dropper.  Got %d" % (len(self.droppers), )
 
     def dropper_drop(self, dropper):
         print "Dropper dropped something..."
