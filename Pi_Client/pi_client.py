@@ -43,6 +43,10 @@ class kplayer(DatagramProtocol):
 		elif data_strip == "REQ REJECT":
 			print "Connection rejected"
 			self.connection = False
+		elif data_strip startswith "STATE":
+			comps = data_strip.split(' ')
+			k_pos = comps[0].split(':')[1]
+			print k_pos
 		else:
 			print "Couldn't parse:",data.strip()
 
