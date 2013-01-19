@@ -13,5 +13,10 @@ class Echo(DatagramProtocol):
 
 
 if __name__ == "__main__":
+    print "Listening on port 9999"
     reactor.listenUDP(9999, Echo())
+
+    print "Listening on port 9998"
+    reactor.listenUDP(9998, Echo())
+
     reactor.run()
