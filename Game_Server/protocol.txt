@@ -5,6 +5,8 @@ Droppers attempt to join with "REQ CON D"
 
 Server will accept with "REQ OK" or reject with "REQ REJECT"
 
+A message of "ERROR" indicates that the server is confused
+
 If accepted,
 
    Server may send "PING", and players must respond with "PONG"
