@@ -64,6 +64,17 @@ class Dropper(Player):
         Player.__init__(self, nh, trans, addr)
         self.gl = gl
 
+    def recv_data(self, data):
+
+        if not data.startswith("DSEND"):
+            self.error()
+
+        self.gl.dropper_drop(self)
+
+    def die(self):
+        self.gl.rm_dropper(self)
+        self.cleanup()
+
 
 class Kplayer(Player):
 
@@ -91,22 +102,75 @@ class Kplayer(Player):
 
 class Logic(object):
 
+    STATE_WAITING = 0
+    STATE_PLAYING = 1
+
     def __init__(self):
 
         self.kplayer = None
         self.droppers = []
 
-    def add_kplayer(self, kplayer):
+        self.state = Logic.STATE_WAITING
 
+    def broadcast(self, data):
+        if self.kplayer:
+            self.kplayer.send(data)
+        for d in self.droppers:
+            d.send(data)
+
+#####
+
+    def start(self):
+        self.state = Logic.STATE_PLAYING
+        self.broadcast("START")
+        print "Starting Game"
+
+    def stop(self):
+        self.state = Logic.STATE_WAITING
+        self.broadcast("STOP")
+        print "Stopping Game"
+
+    def possibly_start(self):
+        if self.state == Logic.STATE_PLAYING:
+            return
+        if ( self.kplayer is not None and len(self.droppers) > 0 ):
+            self.start()
+
+    def possibly_stop(self):
+        if self.state == Logic.STATE_WAITING:
+            return
+        if ( self.kplayer is None or len(self.droppers) == 0 ):
+            self.stop()
+
+#####
+    def add_kplayer(self, kplayer):
         if self.kplayer is None:
             self.kplayer = kplayer
             self.kplayer.accept()
+            self.possibly_start()
         else:
             kplayer.reject()
 
     def rm_kplayer(self):
         self.kplayer = None
         print "Kplayer died :("
+        self.stop()
 
     def kplayer_move(self, pos):
         print "Kplayer is now at %d" % (pos, )
+
+#####
+
+    def add_dropper(self, dropper):
+        self.droppers.append(dropper)
+        dropper.accept()
+        self.possibly_start()
+        print "New dropper"
+
+    def rm_dropper(self, dropper):
+        self.droppers.remove(dropper)
+        self.possibly_stop()
+        print "Lost dropper"
+
+    def dropper_drop(self, dropper):
+        print "Dropper dropped something..."

@@ -8,10 +8,19 @@ Server will accept with "REQ OK" or reject with "REQ REJECT"
 A message of "ERROR" indicates that the server is confused
 
 If accepted,
-
    Server may send "PING", and players must respond with "PONG"
+
+   A "PING" will occur 1 second after the last message seen from a player
+   After 3 seconds without a message, the player will be declared dead
+
+After 1 kplayer and 1 dropper have joined, the server shall send "START"
+
+Once the game has started
 
    Kplayer may send "KSEND <$TODO>" at any point
    Droppers may send "DSEND <$TODO>" at any point
 
    Server will perodically send game information.  $TODO
+
+The server may at any time send "STOP"
+A player may at any time send "DIE"
