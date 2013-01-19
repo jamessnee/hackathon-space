@@ -178,7 +178,7 @@ class Logic(object):
         self.dropq = deque([0, 0])
         self.drops = []
 
-        self.refill_loop.start(5)
+        self.refill_loop.start(2)
 
         # Call immediatly afterwards
         reactor.callLater(0, self.loop.start, 0.05, True)
@@ -253,5 +253,5 @@ class Logic(object):
         d_id = self.dropq.pop()
 	print "Dropping id %d at pos %d" % (d_id, drop_pos)
 
-        D = Drop(d_id, drop_pos, 480, randrange(1,4))
+        D = Drop(d_id, drop_pos, 480, randrange(3,8))
         self.drops.append(D)
