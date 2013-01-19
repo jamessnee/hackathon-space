@@ -73,7 +73,7 @@ def max_run(ar):
 def get_kplayer_pos_from_kinect():
     x = get_depth()[200]
     y = map (lambda x : 1 if x < 200 else 0, x)
-    return max_run(to_len(y)) / 10
+    return max_run(to_len(y))
 
 
 def pygame_loop():
@@ -107,6 +107,6 @@ if __name__ == "__main__" :
 
 	reactor.listenUDP(0,player)	
 	lp = LoopingCall(pygame_loop)
-	lp.start(1)
+	lp.start(0.05)
 	reactor.run()
 
