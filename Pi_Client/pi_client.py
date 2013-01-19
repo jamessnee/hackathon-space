@@ -17,11 +17,10 @@ class kplayer(DatagramProtocol):
 		self.connection = False
 
 	def move(self,delta):
-		self.x_pos = delta
-		if False:
-			print "Sending players new position"
-			to_send = "KSEND %di,%d",int(self.x_pos[0]),int(self.x_pos[1])
-			self.transport.write(to_send)
+		self.x_pos = self.x_pos + delta
+		print "Sending players new position"
+		to_send = "KSEND "+str(self.x_pos)
+		self.transport.write(to_send)
 
 	def startProtocol(self):
 		host = "131.111.179.97"
@@ -34,17 +33,16 @@ class kplayer(DatagramProtocol):
 	def datagramReceived(self, data, (host,port)):
 		data_strip = data.strip()
 		if data_strip == "PING":
-			if self.connection:
-				print "Ping > PONG"
-				self.transport.write("PONG")
+			print "Ping > PONG"
+			self.transport.write("PONG")
 		elif data_strip == "REQ OK":
 			print "Connection accepted"
+		elif data_strip == "START":
+			print "Game Started"
 			self.connection = True
 		elif data_strip == "REQ REJECT":
 			print "Connection rejected"
 			self.connection = False
-		elif data_strip == "ERROR":
-			print "There was an error"
 		else:
 			print "Couldn't parse:",data.strip()
 
@@ -90,8 +88,8 @@ def pygame_loop():
 
 	"""Do some collision detection"""
 
-
 	pygame.display.update()
+	if player.connection:
 	player.move(get_kplayer_pos_from_kinect())
 
 
