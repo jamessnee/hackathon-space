@@ -1,10 +1,13 @@
 #!/usr/bin/python
 
 from time import time
+from collections import deque
 
+from twisted.internet import reactor
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet.task import LoopingCall
 
+from random import randrange
 
 class Player(object):
 
@@ -69,7 +72,12 @@ class Dropper(Player):
         if not data.startswith("DSEND"):
             self.error()
 
-        self.gl.dropper_drop(self)
+        try:
+            pos = int(data[6:])
+        except StandardError:
+            self.error()
+
+        self.gl.dropper_drop(pos)
 
     def die(self):
         self.gl.rm_dropper(self)
@@ -102,6 +110,16 @@ class Kplayer(Player):
 
 ##########################################################################
 
+class Drop(object):
+
+    def __init__(self, i, x, y, v):
+        self.i = i
+        self.x = x
+        self.y = y
+        self.v = v
+
+##########################################################################
+
 class Logic(object):
 
     STATE_WAITING = 0
@@ -112,9 +130,13 @@ class Logic(object):
         self.kplayer = None
         self.droppers = []
 
+        self.dropq = deque()
+        self.drops = []
+
         self.state = Logic.STATE_WAITING
 
         self.loop = LoopingCall(self.game_loop)
+        self.refill_loop = LoopingCall(self.refill_dropq)
 
     def broadcast(self, data):
         if self.kplayer:
@@ -123,7 +145,28 @@ class Logic(object):
             d.send(data)
 
     def game_loop(self):
-        self.broadcast("STATE K:%d" % (self.kplayer.pos,))
+
+        drops = self.drops[:]
+        self.drops = []
+
+        for drop in drops:
+            if drop.y < 1:
+                continue
+            drop.y -= drop.v
+            self.drops.append(drop)
+
+        def drops2str(d):
+            return "%d:%d,%d" % (d.i, d.x, d.y)
+
+        Q = ','.join((str(x) for x in self.dropq))
+        DS = (drops2str(x) for x in self.drops)
+
+        self.broadcast("STATE K:%d Q:%s %s"
+                       % (self.kplayer.pos, Q, ' '.join(DS)) )
+
+    def refill_dropq(self):
+        if len(self.dropq) < 5: # Eventually dynamic
+            self.dropq.append(0) # Eventually item ID
 
 #####
 
@@ -132,7 +175,14 @@ class Logic(object):
         self.broadcast("START")
         print "Starting Game"
 
-        self.loop.start(0.05)
+        self.dropq = deque([0, 0])
+        self.drops = []
+
+        self.refill_loop.start(5)
+
+        # Call immediatly afterwards
+        reactor.callLater(0, self.loop.start, 0.05, True)
+
 
     def _stop(self):
         self.state = Logic.STATE_WAITING
@@ -140,6 +190,7 @@ class Logic(object):
         print "Stopping Game"
 
         self.loop.stop()
+        self.refill_loop.stop()
 
 
     def possibly_start(self):
@@ -190,5 +241,17 @@ class Logic(object):
         self.possibly_stop()
         print "Lost dropper.  Got %d" % (len(self.droppers), )
 
-    def dropper_drop(self, dropper):
-        print "Dropper dropped something..."
+    def dropper_drop(self, drop_pos):
+
+        if not ( 0 <= drop_pos <= 640 ):
+            print "Kplayer invalid position %d" % (drop_pos,)
+            return
+
+        if len(self.dropq) == 0:
+            return # nothing to drop
+
+        d_id = self.dropq.pop()
+	print "Dropping id %d at pos %d" % (d_id, drop_pos)
+
+        D = Drop(d_id, drop_pos, 480, randrange(1,4))
+        self.drops.append(D)

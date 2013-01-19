@@ -7,6 +7,7 @@ Test object for the backend of a dropper player
 from twisted.internet import reactor
 from twisted.internet.protocol import DatagramProtocol
 
+from random import randrange
 
 class dummy_dropper(DatagramProtocol):
 
@@ -44,7 +45,7 @@ class dummy_dropper(DatagramProtocol):
 
     def drop(self):
         if self.playing:
-            self.send("DSEND 0")
+            self.send("DSEND %d" % (randrange(480),) )
             reactor.callLater(0.4, self.drop)
 
 reactor.listenUDP(0, dummy_dropper())
