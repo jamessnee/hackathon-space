@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>  
+<head>
+	<link href="css/index.css" rel="stylesheet" type="text/css"></link>
+	<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css"></link>
+	<link href="css/bootstrap-responsive.min.css" rel="stylesheet" type="text/css"></link>
+	<title>Hackaton WebSockets Client</title>  
+</head>
+<body>  
+	<div class="navbar navbar-inverse navbar-fixed-top">
+		<div class="navbar-inner">
+			<div class="container">
+				<a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</a>
+				<a class="brand" href="#">Hackathon Space</a>
+			<div class="nav-collapse collapse">
+				<ul class="nav">
+					<li class="active"><a href="#">Home</a></li>
+					<li><a href="#about">About</a></li>
+					<li><a href="#contact">Contact</a></li>
+				</ul>
+			</div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+
+		<canvas id="gameViewCanvas" width="640" height="360">
+		</canvas>
+    </div> <!-- /container -->
+	
+	<img id="spacecraft" src="../Resources/Images/hajo1.png" style="max-width:100%;">
+	<img id="background" src="../Resources/Images/background.png" style="max-width:100%;">
+	
+	<script src="js/jquery.js"></script>
+	<script src="js/bootstrap.min.js"></script>
+	<script src="js/painter.js"></script>
+	<script src="js/index.js"></script>
+</body>  
+</html>
