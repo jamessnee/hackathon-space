@@ -93,7 +93,6 @@ def pygame_loop():
 	"""Do some collision detection"""
 
 	pygame.display.update()
-	if player.connection:
 	player.move(get_kplayer_pos_from_kinect())
 
 
