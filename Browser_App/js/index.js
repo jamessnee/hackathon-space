@@ -1,8 +1,16 @@
 var Controller = function() {
+	this.id = 0;
 	var host = 'ws://localhost:8080/drop';
+	if (typeof localStorage.socket !== 'undefined') {
+	//	this.socket = localStorage.socket;
+	//	this.socket.close();
+	}
+	
 	this.socket = new WebSocket(host);
+	localStorage.socket = this.socket;
+	
 	this.canvas = $('#gameViewCanvas');
-	this.painter = new ObjectPainter(this.canvas[0]);
+	this.painter = new ObjectPainter();
 	
 	// initialize events
 	this.eventHandlers = {};
@@ -12,6 +20,11 @@ var Controller = function() {
 	this.painter.initialize();
 }
 
+Controller.prototype.send = function(msg) {
+	this.socket.send('ID:' + this.id + ' ' + msg);
+	// this.socket.send(msg);
+}
+
 Controller.prototype.events = function() {
 	var self = this;
 	this.eventHandlers.canvasClick = function(event) {
@@ -19,37 +32,61 @@ Controller.prototype.events = function() {
 		var x = event.pageX - position.left;
 		var y = event.pageY - position.top;
 		console.log('clicked !!!', x, y);
-		self.socket.send('DSEND ' + x);
-		/*
-		self.painter.updateScreen({
-			objects : [ { x: x, y : y }, { x: x+60, y: y+60 } ],
-			player : { x : x }
-		});
-		*/
-		/*self.painter.clear();
-		self.painter.drawBackground();
-		self.painter.drawAsteroid(x, y);
-		self.painter.drawSpacecraft(x);
-		*/
+		self.send('DSEND ' + x);
 	};
 	
 	this.eventHandlers.onServerMessage = function(msg) {
-		console.log('message ', msg);
-		console.log('data', msg.data);
-		
-		if (msg && msg.data === 'PING') {
-			self.socket.send('PONG');
+		// console.log('message ', msg);
+		// console.log('data', msg.data);
+		if (!msg) {
 			return;
 		}
 		
+		if (msg.data === 'PING') {
+			self.send('PONG');
+			return;
+		}
+		
+		if (msg.data.indexOf("ID") == 0) {
+			self.id = msg.data.substring(3);
+			console.log('id ' + self.id);
+			return;
+		}
+		
+		// parse world state
+		var statePrefix = 'STATE K:';
+		if (msg.data.indexOf(statePrefix) != 0) {
+			return;
+		}
+		
+		var dataString = msg.data.substring(statePrefix.length);
+		var dataArray = dataString.split(' ');
+		
+		// set up state object
+		var state = {};
+		state.player = { x : parseInt(dataArray[0]) };
+		state.objects = [];
+		
+		// parse dropped item positions
+		if (dataArray.length > 2) {
+			dataArray = dataArray.splice(2);
+			for (var index in dataArray) {
+				var colonIndex = dataArray[index].indexOf(':');
+				var xyString = dataArray[index].substring(colonIndex + 1);
+				var xy = xyString.split(',');
+				state.objects.push({ x : parseInt(xy[0]), y : parseInt(xy[1]) });
+			}			
+		}
+		
 		//var world = JSON.parse(msg.data);
-		//console.log('parsed data', world);
-		//self.painter.updateScreen(world);
+		//console.log('parsed data', state);
+		self.painter.updateScreen(state);
 	};
 	
 	this.eventHandlers.onOpen = function() {
 		console.log('opened socket; trying to connect...');
-		self.socket.send('REQ CON D');
+		self.send('REQ CON D');
+		// self.send('REQ CON K');
 		self.painter.initialize();
 	};
 	
@@ -69,5 +106,4 @@ Controller.prototype.initEventHandlers = function() {
 $(function() {
 	var controller = new Controller();
 	controller.initEventHandlers();
-	controller.painter.drawBomb(100, 100);
 })
