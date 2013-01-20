@@ -21,10 +21,10 @@ class UDPDemux(DatagramProtocol):
         self.nh.received(self.transport, data, addr)
 
 class WebSocketDemux(WebSocketHandler):
-    
+
     nh = None
     _id = 0
-    
+
     def write(self, data, addr):
         self.transport.write(data)
 
@@ -34,7 +34,7 @@ class WebSocketDemux(WebSocketHandler):
             space_index = data.find(" ")
             id_string = data[3:space_index]
             data = data[space_index + 1:]
-            
+
             # check if this is a new request
             if int(id_string) == 0:
                 # generate new id
@@ -44,13 +44,13 @@ class WebSocketDemux(WebSocketHandler):
                 self.transport.write("ID " + id_string)
 
         self.nh.received(self, data, id_string)
-        
+
     def closeReceived(self, code, msg):
         print code, msg
-        
+
     def connectionLost(self, reason):
         print "connection lost", reason
-        
+
 
 class NetworkHandler(object):
 

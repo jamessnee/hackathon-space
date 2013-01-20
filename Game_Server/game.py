@@ -170,7 +170,7 @@ class Logic(object):
 
 #####
 
-    def _start(self):		
+    def _start(self):
         self.state = Logic.STATE_PLAYING
         self.broadcast("START")
         print "Starting Game"
