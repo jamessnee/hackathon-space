@@ -36,10 +36,16 @@ ObjectPainter.prototype.initialize = function() {
 	this.drawBackground();
 }
 
+ObjectPainter.prototype.drawText = function(text, x, y) {
+	this.ctx.font = 'normal 18px Arial';
+	this.ctx.fillStyle = '#ff0000';
+	this.ctx.fillText(text, x, y);
+}
+
 /*
 world = {
 	objects : [ { x : 1, y : 1 }, ... ],
-	player : { x : 1 }
+	player : { x : 1, livesCount : 3 }
 }
 */
 ObjectPainter.prototype.updateScreen = function(world) {
@@ -55,6 +61,9 @@ ObjectPainter.prototype.updateScreen = function(world) {
 	
 	// draw player
 	this.drawSpacecraft(world.player.x);
+	
+	// draw lives
+	this.drawText('Lives: ' + world.player.livesCount, 540, 20);
 	
 	for (var index in world.objects) {
 		var x = world.objects[index].x;

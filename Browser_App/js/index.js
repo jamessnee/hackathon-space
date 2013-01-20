@@ -67,9 +67,16 @@ Controller.prototype.events = function() {
 		state.player = { x : parseInt(dataArray[0]) };
 		state.objects = [];
 		
+		// Queue dataArray[1]
+
+		// Lives dataArray[2]
+		var livesString = dataArray[2];
+		livesString = livesString.substring(livesString.indexOf(':') + 1)
+		state.player.livesCount = parseInt(livesString);
+		
 		// parse dropped item positions
-		if (dataArray.length > 2) {
-			dataArray = dataArray.splice(2);
+		if (dataArray.length > 3) {
+			dataArray = dataArray.splice(3);
 			for (var index in dataArray) {
 				var colonIndex = dataArray[index].indexOf(':');
 				var xyString = dataArray[index].substring(colonIndex + 1);
