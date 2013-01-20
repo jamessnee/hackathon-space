@@ -8,6 +8,22 @@ from twisted.internet.protocol import DatagramProtocol
 from twisted.internet.task import LoopingCall
 
 from random import randrange
+from copy import deepcopy as _dc
+
+
+### Constants to tweak
+# Initial items to be dropped
+INITIAL_DROPQ = deque([0, 0, 0])
+# New item to drop every # seconds
+REFILL_EVERY = 1.5
+
+# Drop speed random between # and # px per gameloop
+DROP_SPEED_MIN = 3
+DROP_SPEED_MAX = 10
+
+# Game loop every # seconds
+GAME_LOOP = 0.05
+
 
 class Player(object):
 
@@ -175,13 +191,13 @@ class Logic(object):
         self.broadcast("START")
         print "Starting Game"
 
-        self.dropq = deque([0, 0])
+        self.dropq = _dc(INITIAL_DROPQ)
         self.drops = []
 
-        self.refill_loop.start(2)
+        self.refill_loop.start(_dc(REFILL_EVERY))
 
         # Call immediatly afterwards
-        reactor.callLater(0, self.loop.start, 0.05, True)
+        reactor.callLater(0, self.loop.start, _dc(GAME_LOOP), True)
 
 
     def _stop(self):
@@ -253,5 +269,6 @@ class Logic(object):
         d_id = self.dropq.pop()
 	print "Dropping id %d at pos %d" % (d_id, drop_pos)
 
-        D = Drop(d_id, drop_pos, 480, randrange(3,8))
+        D = Drop(d_id, drop_pos, 480,
+                 randrange(_dc(DROP_SPEED_MIN), _dc(DROP_SPEED_MAX)))
         self.drops.append(D)
