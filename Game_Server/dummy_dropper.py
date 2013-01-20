@@ -26,7 +26,7 @@ class dummy_dropper(DatagramProtocol):
             if data != "PONG":
                 print "<-%s" % (data.rstrip(), )
 
-                self.transport.write(data)
+            self.transport.write(data)
 
     def datagramReceived(self, data, addr):
         if data != "PING":
