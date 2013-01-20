@@ -15,3 +15,7 @@ body {
 #background {
 	visibility: hidden;
 }
+
+#bomb {
+	visibility: hidden;
+}
