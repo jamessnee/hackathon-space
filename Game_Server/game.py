@@ -1,4 +1,5 @@
 #!/usr/bin/python
+from __future__ import division
 
 from time import time
 from collections import deque
@@ -21,9 +22,16 @@ REFILL_EVERY = 1.5
 DROP_SPEED_MIN = 3
 DROP_SPEED_MAX = 10
 
+# Kplayer initial lives
+KPLAYER_LIVES = 3
+
 # Game loop every # seconds
 GAME_LOOP = 0.05
 
+
+### Constants not to tweak
+KPLAYER_DIM = 64.0
+DROP_DIM = [ 20.0 ]
 
 class Player(object):
 
@@ -106,6 +114,7 @@ class Kplayer(Player):
         Player.__init__(self, nh, trans, addr)
         self.gl = gl
 
+        self.lives = 0
         self.pos = 0
 
     def recv_data(self, data):
@@ -129,7 +138,7 @@ class Kplayer(Player):
 class Drop(object):
 
     def __init__(self, i, x, y, v):
-        self.i = i
+        self.id = i
         self.x = x
         self.y = y
         self.v = v
@@ -160,6 +169,28 @@ class Logic(object):
         for d in self.droppers:
             d.send(data)
 
+    def possible_collision(self, drop):
+
+        KDIM = KPLAYER_DIM / 2.0
+
+        KC_X = float(self.kplayer.pos) + KDIM
+        KC_Y = KDIM
+
+        DDIM = DROP_DIM[drop.id] / 2.0
+
+        DC_X = float(drop.x) + DDIM
+        DC_Y = float(drop.y) - DDIM
+
+        if ( (KC_X - DC_X)**2 + (KC_Y - DC_Y)**2 ) <= ( KDIM + DDIM )**2 :
+
+            self.kplayer.lives -= 1
+            # Call possibly stop after this game loop has completed
+            reactor.callLater(0, self.possibly_stop)
+
+            return True
+        else:
+            return False
+
     def game_loop(self):
 
         drops = self.drops[:]
@@ -169,16 +200,23 @@ class Logic(object):
             if drop.y < 1:
                 continue
             drop.y -= drop.v
+
+            if drop.y < KPLAYER_DIM + DROP_DIM[drop.id]:
+                # Destroy objects which have collided
+                if self.possible_collision(drop):
+                    continue
+
             self.drops.append(drop)
 
         def drops2str(d):
-            return "%d:%d,%d" % (d.i, d.x, d.y)
+            return "%d:%d,%d" % (d.id, d.x, d.y)
 
         Q = ','.join((str(x) for x in self.dropq))
         DS = (drops2str(x) for x in self.drops)
 
-        self.broadcast("STATE K:%d Q:%s %s"
-                       % (self.kplayer.pos, Q, ' '.join(DS)) )
+        self.broadcast("STATE K:%d Q:%s L:%d %s"
+                       % (self.kplayer.pos, Q,
+                          self.kplayer.lives, ' '.join(DS)) )
 
     def refill_dropq(self):
         if len(self.dropq) < 5: # Eventually dynamic
@@ -194,6 +232,8 @@ class Logic(object):
         self.dropq = _dc(INITIAL_DROPQ)
         self.drops = []
 
+        self.kplayer.lives = _dc(KPLAYER_LIVES)
+
         self.refill_loop.start(_dc(REFILL_EVERY))
 
         # Call immediatly afterwards
@@ -205,8 +245,12 @@ class Logic(object):
         self.broadcast("STOP")
         print "Stopping Game"
 
-        self.loop.stop()
-        self.refill_loop.stop()
+        try:
+            self.loop.stop()
+            self.refill_loop.stop()
+        except AssertionError:
+            # I REALLY WANT THESE DAM LOOPS TO STOP!!!
+            pass
 
 
     def possibly_start(self):
@@ -218,7 +262,8 @@ class Logic(object):
     def possibly_stop(self):
         if self.state == Logic.STATE_WAITING:
             return
-        if ( self.kplayer is None or len(self.droppers) == 0 ):
+        if ( self.kplayer is None or self.kplayer.lives == 0 or
+             len(self.droppers) == 0 ):
             self._stop()
 
 #####
